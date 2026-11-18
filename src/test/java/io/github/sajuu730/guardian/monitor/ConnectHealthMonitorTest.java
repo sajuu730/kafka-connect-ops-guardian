@@ -34,6 +34,27 @@ class ConnectHealthMonitorTest {
         verify(api, never()).restartTask(anyString(), anyInt());
     }
 
+    @Test void reportsFailedConnectorEvenWhenItHasNoTasks() throws Exception {
+        ConnectApiClient api = mock(ConnectApiClient.class);
+        IncidentPublisher publisher = mock(IncidentPublisher.class);
+        GuardianProperties properties = new GuardianProperties();
+        when(api.listConnectors()).thenReturn(List.of("guardian-failure-test"));
+        when(api.connectorStatus("guardian-failure-test")).thenReturn(mapper.readTree("""
+            {"name":"guardian-failure-test",
+             "connector":{"state":"FAILED","trace":"ConfigException: invalid bootstrap.servers"},
+             "tasks":[]}
+            """));
+
+        ConnectHealthMonitor monitor = new ConnectHealthMonitor(api, properties,
+                new RootCauseClassifier(), new RestartCircuitBreaker(), publisher,
+                new SimpleMeterRegistry());
+        monitor.poll();
+
+        verify(publisher).publish(argThat(event ->
+                event.taskId() == null && "FAILED".equals(event.state())));
+        verify(api, never()).restartTask(anyString(), anyInt());
+    }
+
     @Test void restartsFailedTaskWhenExplicitlyEnabled() throws Exception {
         ConnectApiClient api = mock(ConnectApiClient.class);
         IncidentPublisher publisher = mock(IncidentPublisher.class);
