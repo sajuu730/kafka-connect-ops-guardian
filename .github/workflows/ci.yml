@@ -23,3 +23,5 @@ jobs:
           cache: maven
       - name: Verify
         run: mvn --batch-mode --no-transfer-progress verify
+      - name: Build container image
+        run: docker build --tag kafka-connect-ops-guardian:ci .
