@@ -6,14 +6,17 @@
 
 **An operational reliability service for distributed Kafka Connect clusters.**
 
-Kafka Connect Ops Guardian polls the Kafka Connect Distributed REST API, identifies failed tasks, classifies common failure causes, and coordinates safe, rate-limited recovery. It exposes operational metrics and sends structured incidents to a configurable webhook.
+Kafka Connect Ops Guardian polls the Kafka Connect Distributed REST API, identifies failed tasks and connector-level failures, classifies common failure causes, and coordinates guarded, rate-limited task recovery. It exposes operational metrics and sends structured incidents to a configurable webhook.
 
-> **Project status: Early-stage implementation.** The latest verified CI run passed Maven verification and the Docker image build. Automated recovery is disabled by default. CI success validates the build and automated tests; it does not establish production readiness or prove behavior against every Kafka Connect deployment.
+> **Portfolio project:** an independently developed engineering demonstration using a local Kafka Connect environment and synthetic failure scenarios. It is not affiliated with, or connected to, an employer, customer environment or proprietary system.
+>
+> **Project status: Early-stage implementation.** Automated recovery is disabled by default. CI success validates the build and automated tests; it does not establish production readiness or prove behavior against every Kafka Connect deployment.
 
 ## Capabilities
 
 - Scheduled polling of /connectors and /connectors/{name}/status.
-- FAILED task detection and trace-based root-cause classification.
+- FAILED task detection and connector-level FAILED state detection.
+- Trace-based root-cause classification for common failure patterns.
 - Per-task rolling-window restart limits and cooldown for opt-in task restart.
 - Structured incident webhook delivery with bounded exponential retries; structured logging when no webhook is configured.
 - Isolation of connector-inspection and incident-delivery failures so one failure does not stop the rest of a polling cycle.
@@ -21,7 +24,7 @@ Kafka Connect Ops Guardian polls the Kafka Connect Distributed REST API, identif
 - Unit tests for classification, REST API calls, monitoring, restart circuit-breaker behavior and webhook retries.
 - Dockerfile, local Compose example, Kubernetes Deployment, Service and ConfigMap.
 - GitHub Actions workflow for Maven verification and Docker image build.
-- Separate version-tagged GHCR publishing workflow (not yet exercised by a published release).
+- Separate version-tagged GHCR publishing workflow.
 
 ## Architecture
 
@@ -78,7 +81,7 @@ See [Configuration](docs/configuration.md) for environment variables and default
 
 ## CI and verification
 
-The GitHub Actions CI workflow runs Maven verification and builds the container image locally. A separate release workflow verifies the application and publishes version-tagged images to GHCR when a semantic version tag (for example v0.1.0) is pushed.
+The GitHub Actions CI workflow runs Maven verification and builds the container image locally. A separate release workflow publishes version-tagged images to GHCR when a semantic version tag (for example v0.1.0) is pushed.
 
 [View GitHub Actions runs](https://github.com/sajuu730/kafka-connect-ops-guardian/actions) · [Container release guide](docs/releasing.md)
 
@@ -88,9 +91,9 @@ The GitHub Actions CI workflow runs Maven verification and builds the container 
 - Restart budgets are held in process memory. Run one Guardian replica while recovery is enabled; distributed coordination is required before active-active recovery.
 - Webhook retries are synchronous and bounded. There is no durable outbox, so a process crash or prolonged endpoint outage can still lose an incident.
 - Webhook authentication/signing and credential rotation are deployment responsibilities, not built-in features.
-- The first version detects FAILED tasks. It does not automatically restart entire connectors or alter connector configuration.
+- Recovery currently targets failed tasks; it does not automatically restart entire connectors or alter connector configuration.
 - Root-cause classification is heuristic and should be treated as diagnostic assistance, not a definitive diagnosis.
-- The Kubernetes image reference is a placeholder until a versioned image is published and verified in GHCR.
+- A detected connector-level failure is reported, but the current automatic recovery path does not restart an entire connector.
 
 ## Documentation
 
