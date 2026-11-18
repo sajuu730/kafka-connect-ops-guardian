@@ -54,4 +54,45 @@ class ConnectHealthMonitorTest {
         verify(api).restartTask("orders", 2);
         verify(publisher).publish(any());
     }
+
+    @Test void continuesInspectingOtherConnectorsWhenOneStatusRequestFails() throws Exception {
+        ConnectApiClient api = mock(ConnectApiClient.class);
+        IncidentPublisher publisher = mock(IncidentPublisher.class);
+        GuardianProperties properties = new GuardianProperties();
+        when(api.listConnectors()).thenReturn(List.of("broken", "orders"));
+        when(api.connectorStatus("broken")).thenThrow(new IllegalStateException("temporary REST failure"));
+        when(api.connectorStatus("orders")).thenReturn(mapper.readTree("""
+            {"name":"orders","connector":{"state":"RUNNING"},
+             "tasks":[{"id":1,"state":"FAILED","trace":"Connection refused"}]}
+            """));
+
+        ConnectHealthMonitor monitor = new ConnectHealthMonitor(api, properties,
+                new RootCauseClassifier(), new RestartCircuitBreaker(), publisher,
+                new SimpleMeterRegistry());
+        monitor.poll();
+
+        verify(publisher).publish(any());
+        verify(api).connectorStatus("orders");
+    }
+
+    @Test void continuesPollingWhenIncidentPublisherFails() throws Exception {
+        ConnectApiClient api = mock(ConnectApiClient.class);
+        IncidentPublisher publisher = mock(IncidentPublisher.class);
+        doThrow(new IllegalStateException("webhook unavailable")).when(publisher).publish(any());
+        GuardianProperties properties = new GuardianProperties();
+        when(api.listConnectors()).thenReturn(List.of("orders", "payments"));
+        when(api.connectorStatus(anyString())).thenReturn(mapper.readTree("""
+            {"connector":{"state":"RUNNING"},
+             "tasks":[{"id":0,"state":"FAILED","trace":"Connection refused"}]}
+            """));
+
+        ConnectHealthMonitor monitor = new ConnectHealthMonitor(api, properties,
+                new RootCauseClassifier(), new RestartCircuitBreaker(), publisher,
+                new SimpleMeterRegistry());
+        monitor.poll();
+
+        verify(api).connectorStatus("orders");
+        verify(api).connectorStatus("payments");
+        verify(publisher, times(2)).publish(any());
+    }
 }
