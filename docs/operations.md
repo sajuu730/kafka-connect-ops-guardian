@@ -55,7 +55,14 @@ kubectl apply -f k8s/configmap.yaml
 kubectl apply -f k8s/deployment.yaml
 ```
 
-The example image name is a placeholder until a tagged image is published. Configure the image tag and Connect URL for your cluster. Recovery remains disabled in the example.
+The example image name is a placeholder until a tagged image is published. Configure the image tag and Connect URL for your cluster. Recovery remains disabled in the example. The Deployment reads non-secret settings from the ConfigMap and optionally reads `GUARDIAN_WEBHOOK_URL` from the `kafka-connect-ops-guardian-secrets` Secret.
+
+Create the Secret only when a webhook is configured; do not commit it:
+
+```bash
+kubectl create secret generic kafka-connect-ops-guardian-secrets \
+  --from-literal=webhook-url='https://your-internal-webhook.example/incidents'
+```
 
 ## Security notes
 
