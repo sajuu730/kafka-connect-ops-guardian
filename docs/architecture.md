@@ -1,5 +1,24 @@
 # Architecture
 
+## System overview
+
+```mermaid
+flowchart TD
+    API[Kafka Connect Distributed REST API] --> POLL[Scheduled inventory and status polling]
+    POLL --> EVAL[Task health evaluation]
+    EVAL --> CLASS[Trace-based root-cause classification]
+    EVAL --> COORD[Recovery coordinator]
+    COORD --> BUDGET[Per-task rolling restart budget and cooldown]
+    BUDGET -->|Recovery enabled and allowed| RESTART[Kafka Connect task restart API]
+    CLASS --> INCIDENT[Structured incident]
+    COORD --> INCIDENT
+    INCIDENT --> HOOK[Webhook with bounded retries]
+    INCIDENT --> LOG[Structured application logs]
+    POLL --> METRICS[Micrometer]
+    COORD --> METRICS
+    METRICS --> PROM[Actuator / Prometheus]
+```
+
 ## Observation flow
 
 The scheduled monitor lists connectors from the Kafka Connect Distributed REST API, then reads each connector's status document. Task state and trace are used to identify failed tasks and classify common failure signatures. A failure inspecting one connector is isolated so the rest of the cluster is still inspected during that polling cycle.
@@ -27,3 +46,7 @@ Prometheus metrics are exposed through Spring Boot Actuator at `/actuator/promet
 - Webhook retries are synchronous and bounded; there is no durable outbox. A process crash or prolonged endpoint outage can still lose an incident.
 - Webhook authentication is expected to be enforced by the deployment/network layer; built-in signing or credential rotation is not implemented.
 - Connector-level FAILED state is reported via its failed tasks; connector restart is intentionally not automatic in this initial implementation.
+
+## Verification status
+
+The latest GitHub Actions workflow completed successfully with Maven verification and Docker image build. This validates the automated checks in CI. A live integration exercise against a representative Kafka Connect cluster and operational webhook is still a separate validation task.
