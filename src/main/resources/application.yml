@@ -36,3 +36,7 @@ guardian:
     cooldown: ${GUARDIAN_RESTART_COOLDOWN:2m}
   incidents:
     webhook-url: ${GUARDIAN_WEBHOOK_URL:}
+    request-timeout: ${GUARDIAN_WEBHOOK_TIMEOUT:3s}
+    max-attempts: ${GUARDIAN_WEBHOOK_MAX_ATTEMPTS:3}
+    initial-backoff: ${GUARDIAN_WEBHOOK_INITIAL_BACKOFF:250ms}
+    max-backoff: ${GUARDIAN_WEBHOOK_MAX_BACKOFF:2s}
