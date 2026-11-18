@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.github.sajuu730.guardian.config.GuardianProperties;
 import java.time.Duration;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -12,6 +13,7 @@ import org.springframework.web.client.RestClient;
 public class RestConnectApiClient implements ConnectApiClient {
     private final RestClient client;
 
+    @Autowired
     public RestConnectApiClient(RestClient.Builder builder, GuardianProperties properties) {
         this(builder, properties, true);
     }
