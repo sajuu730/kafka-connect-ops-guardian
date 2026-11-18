@@ -1,36 +1,44 @@
 # Delivery Roadmap
 
+This roadmap distinguishes implemented behavior from items that need additional infrastructure or validation.
+
 ## Milestone 1 — Service foundation
-- Spring Boot application, typed configuration, health and Prometheus endpoints.
-- Safe defaults: recovery disabled until explicitly enabled.
-- CI compiles and runs unit tests.
+- [x] Spring Boot application, typed configuration, health and Prometheus endpoints.
+- [x] Safe defaults: recovery disabled until explicitly enabled.
+- [x] Maven verification and container-build workflow defined (first successful Actions run still pending).
 
 ## Milestone 2 — Connect cluster observation
-- Poll connector inventory and connector/task status.
-- Bound HTTP timeouts and handle Connect API errors.
-- Track last state transition and task progress timestamps.
-- Detect FAILED and configurable stalled states.
+- [x] Poll connector inventory and connector/task status.
+- [x] Bound HTTP timeouts and isolate individual connector inspection failures.
+- [x] Detect FAILED tasks and track their first observed unhealthy time.
+- [ ] Stalled-task detection using an explicit connector progress signal or Prometheus/JMX integration. The standard Connect status API alone is insufficient.
 
 ## Milestone 3 — Diagnosis and recovery
-- Classify common failure signatures without discarding the original trace.
-- Restart failed tasks only when recovery is enabled.
-- Rolling-window restart budget per connector/task.
-- Cooldown and duplicate-action protection.
-- Escalate when the budget is exhausted.
+- [x] Classify common failure signatures without discarding the original trace.
+- [x] Restart failed tasks only when recovery is enabled.
+- [x] Rolling-window restart budget and cooldown per connector/task.
+- [x] Record restart-request failures and budget exhaustion as incident actions.
+- [ ] Persist restart budgets in a shared store before supporting multiple Guardian replicas with recovery enabled.
+- [ ] Verify recovery completion from task state transitions and expose a dedicated recovery outcome metric.
 
 ## Milestone 4 — Incidents and observability
-- Structured webhook payloads with cluster, connector, task, state, classification and recovery decision.
-- Prometheus counters and duration gauges.
-- Tests for webhook success, failure and timeouts.
+- [x] Structured incident payloads with connector, task, state, classification, trace and recovery decision.
+- [x] Prometheus counters and unhealthy-duration gauge.
+- [x] Bounded synchronous webhook retries with exponential backoff and configurable request timeout.
+- [x] Tests for webhook retry success/exhaustion and monitor isolation.
+- [ ] Durable asynchronous outbox, delivery authentication/signing and delivery-lag metrics.
 
 ## Milestone 5 — Delivery and operations
-- Docker image and reproducible local Compose environment.
-- Kubernetes Deployment/Service/ConfigMap and optional CronJob mode.
-- CI container build and security-conscious configuration guidance.
-- End-to-end tests against a disposable Kafka Connect environment.
+- [x] Docker image and reproducible local Compose environment.
+- [x] Kubernetes Deployment/Service/ConfigMap and operational documentation.
+- [x] CI workflow for Maven verification and Docker image build.
+- [ ] Successful GitHub Actions run and live Kafka Connect integration validation.
+- [ ] Publish versioned container images and replace the Kubernetes image placeholder.
 
-## Non-goals for the first release
-- Replacing Kafka Connect's own distributed coordination.
-- Restarting every FAILED task unconditionally.
-- Claiming exactly-once recovery.
-- Automatically changing connector configuration.
+## First-release constraints
+
+- Restart budgets are process-local; run one Guardian replica while automated recovery is enabled.
+- A restart request is not proof of recovery; verify task state in a later poll.
+- Webhook delivery is synchronous and not durable across process crashes.
+- Stalled-task detection requires an explicit progress metric; RUNNING status alone is not evidence of progress.
+- Guardian does not replace Kafka Connect's distributed coordination, restart whole connectors, or mutate connector configuration.
