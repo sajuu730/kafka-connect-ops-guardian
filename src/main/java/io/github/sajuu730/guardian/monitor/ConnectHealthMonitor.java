@@ -47,7 +47,7 @@ public class ConnectHealthMonitor {
         this.failureCounter = Counter.builder("connector_observation_failures")
                 .description("Failures while polling Kafka Connect").register(registry);
         Gauge.builder("connector_unhealthy_duration_seconds", unhealthySeconds, AtomicLong::get)
-                .description("Duration in seconds of the oldest currently observed unhealthy task")
+                .description("Duration in seconds of the oldest currently observed unhealthy connector or task")
                 .register(registry);
     }
 
@@ -74,6 +74,19 @@ public class ConnectHealthMonitor {
     void inspect(String connector) {
         JsonNode status = connect.connectorStatus(connector);
         if (status == null) return;
+        JsonNode connectorStatus = status.path("connector");
+        String connectorState = connectorStatus.path("state").asText("UNKNOWN");
+        String connectorKey = connector + "/connector";
+        if ("FAILED".equalsIgnoreCase(connectorState)) {
+            unhealthySince.computeIfAbsent(connectorKey, ignored -> Instant.now());
+            String trace = connectorStatus.path("trace").asText("");
+            publishIncident(new IncidentEvent(Instant.now(), connector, null, connectorState,
+                    classifier.classify(trace), trace, "RECOVERY_DISABLED",
+                    "Connector is FAILED; automated task recovery does not apply to connector-level failures."));
+        } else {
+            unhealthySince.remove(connectorKey);
+        }
+
         JsonNode tasks = status.path("tasks");
         if (!tasks.isArray()) return;
 
