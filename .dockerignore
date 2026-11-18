@@ -1,0 +1,12 @@
+.git
+.github
+.idea
+.vscode
+*.iml
+.env
+*.log
+src
+docs
+k8s
+target/*
+!target/kafka-connect-ops-guardian-0.1.0-SNAPSHOT.jar
