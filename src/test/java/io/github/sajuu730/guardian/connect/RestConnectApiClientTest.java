@@ -19,7 +19,7 @@ class RestConnectApiClientTest {
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         GuardianProperties properties = new GuardianProperties();
         properties.getConnect().setBaseUrl("http://connect.test:8083");
-        RestConnectApiClient client = new RestConnectApiClient(builder, properties);
+        RestConnectApiClient client = new RestConnectApiClient(builder, properties, false);
 
         server.expect(requestTo("http://connect.test:8083/connectors"))
                 .andExpect(method(HttpMethod.GET))
