@@ -4,6 +4,7 @@ import io.github.sajuu730.guardian.config.GuardianProperties;
 import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -23,6 +24,7 @@ public class LoggingIncidentPublisher implements IncidentPublisher {
     private final Duration initialBackoff;
     private final Duration maxBackoff;
 
+    @Autowired
     public LoggingIncidentPublisher(RestClient.Builder builder, GuardianProperties properties) {
         this(builder, properties, true);
     }
