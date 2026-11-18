@@ -13,17 +13,17 @@ Building a connector is only part of operating Kafka Connect. Production operati
 ## Planned capabilities
 
 - [x] Spring Boot service foundation and externalized configuration
-- [ ] Scheduled polling of `/connectors` and connector/task status endpoints
-- [ ] FAILED-state and configurable stalled-task detection
-- [ ] Root-cause classification from Connect trace/error details
-- [ ] Controlled task restart with rolling-window circuit breaker
+- [x] Scheduled polling of `/connectors` and connector/task status endpoints
+- [x] FAILED-state detection; stalled-task detection remains planned
+- [x] Initial root-cause classification from Connect trace/error details
+- [x] Controlled task restart with rolling-window circuit breaker
 - [ ] Idempotent recovery coordination and cooldown
-- [ ] Prometheus metrics and health endpoints
-- [ ] Structured incident webhook delivery
+- [x] Prometheus metrics and health endpoints
+- [x] Structured incident webhook delivery (or structured logging when unset)
 - [ ] Unit and integration tests with WireMock/Testcontainers
-- [ ] Docker image and Compose demo environment
-- [ ] Kubernetes Deployment, Service, ConfigMap and CronJob examples
-- [ ] GitHub Actions CI
+- [x] Dockerfile and local Compose demo environment
+- [x] Kubernetes Deployment, Service and ConfigMap examples
+- [x] GitHub Actions Maven verification and Docker build workflow
 
 ## Architecture
 
