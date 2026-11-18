@@ -2,28 +2,21 @@
 
 **An operational reliability service for distributed Kafka Connect clusters.**
 
-Kafka Connect Ops Guardian continuously inspects the Kafka Connect Distributed REST API, identifies unhealthy connectors and tasks, classifies failure causes, and coordinates safe, rate-limited recovery. It exposes operational metrics and sends structured incidents to a configurable webhook.
+Kafka Connect Ops Guardian inspects the Kafka Connect Distributed REST API, identifies failed tasks, classifies common failure causes, and coordinates safe, rate-limited recovery. It exposes operational metrics and sends structured incidents to a configurable webhook.
 
-> Status: initial implementation in progress. Features are documented as implemented only when backed by code and tests.
+> Early-stage implementation. See the limitations below before enabling automated recovery.
 
-## Why this project exists
+## Capabilities implemented
 
-Building a connector is only part of operating Kafka Connect. Production operations also require health visibility, failure diagnosis, controlled recovery, escalation, and evidence that automation itself is healthy. Ops Guardian focuses on that operational layer.
-
-## Planned capabilities
-
-- [x] Spring Boot service foundation and externalized configuration
-- [x] Scheduled polling of `/connectors` and connector/task status endpoints
-- [x] FAILED-state detection; stalled-task detection remains planned
-- [x] Initial root-cause classification from Connect trace/error details
-- [x] Controlled task restart with rolling-window circuit breaker
-- [ ] Idempotent recovery coordination and cooldown
-- [x] Prometheus metrics and health endpoints
-- [x] Structured incident webhook delivery (or structured logging when unset)
-- [ ] Unit and integration tests with WireMock/Testcontainers
-- [x] Dockerfile and local Compose demo environment
-- [x] Kubernetes Deployment, Service and ConfigMap examples
-- [x] GitHub Actions Maven verification and Docker build workflow
+- Spring Boot service foundation and externalized configuration.
+- Scheduled polling of `/connectors` and `/connectors/{name}/status`.
+- FAILED task detection and initial trace-based root-cause classification.
+- Opt-in task restart with per-task rolling-window restart limits and cooldown.
+- Structured incident webhook delivery, with structured logging when no webhook is configured.
+- Prometheus metrics and Spring Boot Actuator health endpoints.
+- Unit tests for classification, REST API calls, monitoring and restart circuit-breaker behavior.
+- Dockerfile, local Compose example, Kubernetes Deployment, Service and ConfigMap.
+- GitHub Actions workflow for Maven verification and Docker image build.
 
 ## Architecture
 
@@ -40,56 +33,59 @@ Kafka Connect REST API
  Recovery Coordinator       Incident Event
         |                         |
         v                         v
- Circuit Breaker             Webhook Sender
+ Rolling Restart Budget       Webhook / Logs
         |
         v
  POST /connectors/{name}/tasks/{id}/restart
 
                   Micrometer / Prometheus
-                           |
-                           v
-                     Grafana (demo)
 ```
 
-## Safety model
+## Safety defaults
 
-Automated recovery is deliberately conservative:
+Automated recovery is disabled by default. When enabled, a per-task rolling restart budget and cooldown prevent unbounded restart loops. The service records an accepted restart request; it does not treat that request as proof the task recovered.
 
-1. Only configured, eligible failures are considered for restart.
-2. A per-task rolling restart limit prevents restart loops.
-3. A cooldown prevents repeated actions for the same observed failure.
-4. When the limit is reached, automation stops and emits an escalation incident.
-5. The service never claims a restart succeeded until Kafka Connect confirms the request was accepted.
-6. Webhook delivery failure is observable and does not silently erase the incident.
+## Important limitations
 
-A task restart is not proof that the underlying cause is fixed. Operators remain responsible for investigating persistent incidents.
+- Stalled-task detection is not implemented. Kafka Connect's standard status API reports state and trace, not record-level progress. A reliable progress signal must be supplied by connector-specific metrics or another monitoring integration.
+- Restart budgets are held in process memory. Use one Guardian replica while recovery is enabled; distributed coordination is required before active-active recovery.
+- The first version detects FAILED tasks. It does not automatically restart entire connectors or alter connector configuration.
+- Webhook delivery is synchronous and has no durable outbox or retry queue yet.
+- Root-cause classification is heuristic and should be treated as diagnostic assistance, not a definitive diagnosis.
+- The Kubernetes image reference is a placeholder until a container is published to GHCR.
+
+## Technology
+
+Java 21, Spring Boot, Kafka Connect REST API, Micrometer, Prometheus, Docker, Kubernetes, JUnit 5.
 
 ## Local development
 
 Requirements: Java 21 and Maven 3.9+.
 
 ```bash
-mvn test
-mvn spring-boot:run
+mvn --batch-mode verify
+docker build -t kafka-connect-ops-guardian .
 ```
 
-The service listens on port `8080`. Actuator health is available at `/actuator/health`; Prometheus metrics are exposed at `/actuator/prometheus` when enabled.
+To run against a local Connect REST endpoint:
 
-## Configuration
+```bash
+CONNECT_URL=http://localhost:8083 mvn spring-boot:run
+```
 
-All settings use environment variables or Spring configuration. Never commit credentials or production endpoints. See [docs/configuration.md](docs/configuration.md) as configuration is implemented.
+Health: `http://localhost:8080/actuator/health`
 
-## Project quality
+Prometheus: `http://localhost:8080/actuator/prometheus`
 
-- Java 21, Spring Boot, Maven
-- JUnit 5 and Mockito
-- Docker and Kubernetes deployment examples
-- CI validation on pull requests and pushes
+## Configuration and operations
 
-## Roadmap
+- [Configuration reference](docs/configuration.md)
+- [Architecture and limitations](docs/architecture.md)
+- [Operations guide](docs/operations.md)
+- [Delivery roadmap](docs/roadmap.md)
 
-See [docs/roadmap.md](docs/roadmap.md) for milestones and known limitations.
+Never expose the Connect REST API publicly. Use TLS, authentication, network policies and secret references in production.
 
 ## License
 
-MIT (see [LICENSE](LICENSE)).
+MIT. See [LICENSE](LICENSE).
