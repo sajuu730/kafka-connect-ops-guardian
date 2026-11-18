@@ -50,7 +50,19 @@ public class GuardianProperties {
     }
     public static class Incidents {
         private String webhookUrl = "";
+        private Duration requestTimeout = Duration.ofSeconds(3);
+        private int maxAttempts = 3;
+        private Duration initialBackoff = Duration.ofMillis(250);
+        private Duration maxBackoff = Duration.ofSeconds(2);
         public String getWebhookUrl() { return webhookUrl; }
         public void setWebhookUrl(String webhookUrl) { this.webhookUrl = webhookUrl; }
+        public Duration getRequestTimeout() { return requestTimeout; }
+        public void setRequestTimeout(Duration requestTimeout) { this.requestTimeout = requestTimeout; }
+        public int getMaxAttempts() { return maxAttempts; }
+        public void setMaxAttempts(int maxAttempts) { this.maxAttempts = maxAttempts; }
+        public Duration getInitialBackoff() { return initialBackoff; }
+        public void setInitialBackoff(Duration initialBackoff) { this.initialBackoff = initialBackoff; }
+        public Duration getMaxBackoff() { return maxBackoff; }
+        public void setMaxBackoff(Duration maxBackoff) { this.maxBackoff = maxBackoff; }
     }
 }
