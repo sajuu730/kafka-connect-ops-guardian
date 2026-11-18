@@ -21,7 +21,8 @@ spec:
         runAsGroup: 10001
       containers:
         - name: guardian
-          image: ghcr.io/sajuu730/kafka-connect-ops-guardian:latest
+          # Pin a version for reproducible deployments; update deliberately on release.
+          image: ghcr.io/sajuu730/kafka-connect-ops-guardian:v0.1.0
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
