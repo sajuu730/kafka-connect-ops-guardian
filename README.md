@@ -4,17 +4,18 @@
 
 Kafka Connect Ops Guardian inspects the Kafka Connect Distributed REST API, identifies failed tasks, classifies common failure causes, and coordinates safe, rate-limited recovery. It exposes operational metrics and sends structured incidents to a configurable webhook.
 
-> Early-stage implementation. See the limitations below before enabling automated recovery.
+> Early-stage implementation. Automated recovery is disabled by default; review the limitations before enabling it.
 
 ## Capabilities implemented
 
 - Spring Boot service foundation and externalized configuration.
 - Scheduled polling of `/connectors` and `/connectors/{name}/status`.
-- FAILED task detection and initial trace-based root-cause classification.
-- Opt-in task restart with per-task rolling-window restart limits and cooldown.
-- Structured incident webhook delivery, with structured logging when no webhook is configured.
+- FAILED task detection and trace-based root-cause classification.
+- Per-task rolling-window restart limits and cooldown for opt-in task restart.
+- Structured incident webhook delivery with bounded exponential retries; structured logging when no webhook is configured.
+- Isolation of connector inspection and incident delivery failures so one failure does not stop the rest of a polling cycle.
 - Prometheus metrics and Spring Boot Actuator health endpoints.
-- Unit tests for classification, REST API calls, monitoring and restart circuit-breaker behavior.
+- Unit tests for classification, REST API calls, monitoring, restart circuit-breaker behavior and webhook retries.
 - Dockerfile, local Compose example, Kubernetes Deployment, Service and ConfigMap.
 - GitHub Actions workflow for Maven verification and Docker image build.
 
@@ -33,7 +34,7 @@ Kafka Connect REST API
  Recovery Coordinator       Incident Event
         |                         |
         v                         v
- Rolling Restart Budget       Webhook / Logs
+ Rolling Restart Budget     Webhook Retry / Logs
         |
         v
  POST /connectors/{name}/tasks/{id}/restart
@@ -49,8 +50,9 @@ Automated recovery is disabled by default. When enabled, a per-task rolling rest
 
 - Stalled-task detection is not implemented. Kafka Connect's standard status API reports state and trace, not record-level progress. A reliable progress signal must be supplied by connector-specific metrics or another monitoring integration.
 - Restart budgets are held in process memory. Use one Guardian replica while recovery is enabled; distributed coordination is required before active-active recovery.
+- Webhook retries are synchronous and bounded. There is no durable outbox, so a process crash or prolonged endpoint outage can still lose an incident.
+- Webhook authentication/signing and credential rotation are deployment responsibilities, not built-in features.
 - The first version detects FAILED tasks. It does not automatically restart entire connectors or alter connector configuration.
-- Webhook delivery is synchronous and has no durable outbox or retry queue yet.
 - Root-cause classification is heuristic and should be treated as diagnostic assistance, not a definitive diagnosis.
 - The Kubernetes image reference is a placeholder until a container is published to GHCR.
 
