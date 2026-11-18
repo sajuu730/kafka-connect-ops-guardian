@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-connect-ops-guardian
+  labels:
+    app: kafka-connect-ops-guardian
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-connect-ops-guardian
+  template:
+    metadata:
+      labels:
+        app: kafka-connect-ops-guardian
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+      containers:
+        - name: guardian
+          image: ghcr.io/sajuu730/kafka-connect-ops-guardian:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: CONNECT_URL
+              value: http://kafka-connect:8083
+            - name: GUARDIAN_RECOVERY_ENABLED
+              value: "false"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-connect-ops-guardian
+spec:
+  selector:
+    app: kafka-connect-ops-guardian
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
