@@ -55,12 +55,20 @@ public class ConnectHealthMonitor {
     public void poll() {
         if (!properties.getPolling().isEnabled()) return;
         try {
-            for (String connector : connect.listConnectors()) inspect(connector);
+            for (String connector : connect.listConnectors()) {
+                try {
+                    inspect(connector);
+                } catch (RuntimeException exception) {
+                    failureCounter.increment();
+                    log.error("Failed to inspect Kafka Connect connector {}", connector, exception);
+                }
+            }
         } catch (RuntimeException exception) {
             failureCounter.increment();
-            log.error("Kafka Connect polling cycle failed", exception);
+            log.error("Kafka Connect connector discovery failed", exception);
+        } finally {
+            updateUnhealthyDuration();
         }
-        updateUnhealthyDuration();
     }
 
     void inspect(String connector) {
@@ -74,7 +82,7 @@ public class ConnectHealthMonitor {
             String state = task.path("state").asText("UNKNOWN");
             String key = connector + "/" + taskId;
             if ("FAILED".equalsIgnoreCase(state)) {
-                Instant firstSeen = unhealthySince.computeIfAbsent(key, ignored -> Instant.now());
+                unhealthySince.computeIfAbsent(key, ignored -> Instant.now());
                 String trace = task.path("trace").asText("");
                 RootCause rootCause = classifier.classify(trace);
                 String action = "RECOVERY_DISABLED";
@@ -96,16 +104,26 @@ public class ConnectHealthMonitor {
                             restartCounter.increment();
                         } catch (RuntimeException exception) {
                             action = "RESTART_REQUEST_FAILED";
-                            detail = exception.getMessage();
+                            detail = exception.getMessage() == null ? exception.getClass().getSimpleName() : exception.getMessage();
                             failureCounter.increment();
                         }
                     }
                 }
-                incidents.publish(new IncidentEvent(Instant.now(), connector, taskId, state,
+                publishIncident(new IncidentEvent(Instant.now(), connector, taskId, state,
                         rootCause, trace, action, detail));
             } else {
                 unhealthySince.remove(key);
             }
+        }
+    }
+
+    private void publishIncident(IncidentEvent event) {
+        try {
+            incidents.publish(event);
+        } catch (RuntimeException exception) {
+            failureCounter.increment();
+            log.error("Failed to publish incident for connector {} task {}",
+                    event.connector(), event.taskId(), exception);
         }
     }
 
