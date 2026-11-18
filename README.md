@@ -8,11 +8,11 @@
 
 Kafka Connect Ops Guardian polls the Kafka Connect Distributed REST API, identifies failed tasks, classifies common failure causes, and coordinates safe, rate-limited recovery. It exposes operational metrics and sends structured incidents to a configurable webhook.
 
-> **Project status: Early-stage implementation.** The latest GitHub Actions run passed Maven verification and the Docker image build. Automated recovery is disabled by default. CI success validates the build and automated tests; it does not establish production readiness or prove behavior against every Kafka Connect deployment.
+> **Project status: Early-stage implementation.** The latest verified CI run passed Maven verification and the Docker image build. Automated recovery is disabled by default. CI success validates the build and automated tests; it does not establish production readiness or prove behavior against every Kafka Connect deployment.
 
 ## Capabilities
 
-- Scheduled polling of `/connectors` and `/connectors/{name}/status`.
+- Scheduled polling of /connectors and /connectors/{name}/status.
 - FAILED task detection and trace-based root-cause classification.
 - Per-task rolling-window restart limits and cooldown for opt-in task restart.
 - Structured incident webhook delivery with bounded exponential retries; structured logging when no webhook is configured.
@@ -21,6 +21,7 @@ Kafka Connect Ops Guardian polls the Kafka Connect Distributed REST API, identif
 - Unit tests for classification, REST API calls, monitoring, restart circuit-breaker behavior and webhook retries.
 - Dockerfile, local Compose example, Kubernetes Deployment, Service and ConfigMap.
 - GitHub Actions workflow for Maven verification and Docker image build.
+- Separate version-tagged GHCR publishing workflow (not yet exercised by a published release).
 
 ## Architecture
 
@@ -77,11 +78,9 @@ See [Configuration](docs/configuration.md) for environment variables and default
 
 ## CI and verification
 
-The GitHub Actions workflow runs:
-1. `mvn --batch-mode --no-transfer-progress verify`
-2. A Docker image build using the resulting application JAR.
+The GitHub Actions CI workflow runs Maven verification and builds the container image locally. A separate release workflow verifies the application and publishes version-tagged images to GHCR when a semantic version tag (for example v0.1.0) is pushed.
 
-[View GitHub Actions runs](https://github.com/sajuu730/kafka-connect-ops-guardian/actions).
+[View GitHub Actions runs](https://github.com/sajuu730/kafka-connect-ops-guardian/actions) · [Container release guide](docs/releasing.md)
 
 ## Important limitations
 
@@ -91,7 +90,7 @@ The GitHub Actions workflow runs:
 - Webhook authentication/signing and credential rotation are deployment responsibilities, not built-in features.
 - The first version detects FAILED tasks. It does not automatically restart entire connectors or alter connector configuration.
 - Root-cause classification is heuristic and should be treated as diagnostic assistance, not a definitive diagnosis.
-- The Kubernetes image reference is a placeholder until a container is published to GHCR.
+- The Kubernetes image reference is a placeholder until a versioned image is published and verified in GHCR.
 
 ## Documentation
 
@@ -99,9 +98,11 @@ The GitHub Actions workflow runs:
 - [Operations guide](docs/operations.md)
 - [Configuration reference](docs/configuration.md)
 - [Delivery roadmap](docs/roadmap.md)
+- [Container release guide](docs/releasing.md)
+- [Demo and screenshot capture guide](docs/demo-capture.md)
 
 Never expose the Connect REST API publicly. Use TLS, authentication, network policies, secret references and restricted RBAC in production.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See LICENSE.
