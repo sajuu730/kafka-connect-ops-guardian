@@ -3,7 +3,6 @@ package io.github.sajuu730.guardian.connect;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.time.Duration;
 import java.util.List;
-import org.springframework.boot.web.client.RestClientBuilderConfigurer;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
