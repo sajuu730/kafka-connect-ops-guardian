@@ -5,7 +5,7 @@ This roadmap distinguishes implemented behavior from items that need additional 
 ## Milestone 1 — Service foundation
 - [x] Spring Boot application, typed configuration, health and Prometheus endpoints.
 - [x] Safe defaults: recovery disabled until explicitly enabled.
-- [x] Maven verification and container-build workflow defined (first successful Actions run still pending).
+- [x] Maven verification and Docker image build pass in GitHub Actions.
 
 ## Milestone 2 — Connect cluster observation
 - [x] Poll connector inventory and connector/task status.
@@ -29,10 +29,10 @@ This roadmap distinguishes implemented behavior from items that need additional 
 - [ ] Durable asynchronous outbox, delivery authentication/signing and delivery-lag metrics.
 
 ## Milestone 5 — Delivery and operations
-- [x] Docker image and reproducible local Compose environment.
+- [x] Docker image build and reproducible local Compose environment.
 - [x] Kubernetes Deployment/Service/ConfigMap and operational documentation.
 - [x] CI workflow for Maven verification and Docker image build.
-- [ ] Successful GitHub Actions run and live Kafka Connect integration validation.
+- [ ] Live Kafka Connect integration validation beyond the automated mock/unit tests.
 - [ ] Publish versioned container images and replace the Kubernetes image placeholder.
 
 ## First-release constraints
